@@ -22,6 +22,7 @@ services:
           continueOnError: false
 pipeline:
   variables:
+      
       - AZURE_OPENAI_SERVICE
       - AZURE_OPENAI_API_VERSION
       - AZURE_OPENAI_RESOURCE_GROUP
@@ -87,6 +88,7 @@ pipeline:
   secrets:
       - AZURE_SERVER_APP_SECRET
       - AZURE_CLIENT_APP_SECRET
+      - COSMOS_DB_KEY
 hooks:
     preprovision:
       windows:

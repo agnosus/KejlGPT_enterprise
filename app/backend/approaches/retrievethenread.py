@@ -85,10 +85,16 @@ info4.pdf: In-network institutions include Overlake, Swedish and others in the r
         has_vector = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
         use_semantic_ranker = overrides.get("semantic_ranker") and has_text
 
-        use_semantic_captions = True if overrides.get("semantic_captions") and has_text else False
-        top = overrides.get("top", 3)
-        minimum_search_score = overrides.get("minimum_search_score", 0.0)
-        minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
+        use_semantic_captions = True if overrides.get("retrieval_mode") == "text" else False
+        if use_semantic_captions:
+            top = 3
+            minimum_search_score = 0
+            minimum_reranker_score = 0
+        else:
+            top = overrides.get("top", 3)
+            minimum_search_score = overrides.get("minimum_search_score", 0.0)
+            minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
+            
         filter = self.build_filter(overrides, auth_claims)
         # If retrieval mode includes vectors, compute an embedding for the query
         vectors: list[VectorQuery] = []

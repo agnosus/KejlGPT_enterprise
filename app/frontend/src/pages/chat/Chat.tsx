@@ -41,7 +41,7 @@ const Chat = () => {
     const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>(RetrievalMode.Hybrid);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
     const [shouldStream, setShouldStream] = useState<boolean>(true);
-    const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(true);
+    const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(true);
     const [vectorFieldList, setVectorFieldList] = useState<VectorFieldOptions[]>([VectorFieldOptions.Embedding]);
@@ -49,7 +49,7 @@ const Chat = () => {
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [gpt4vInput, setGPT4VInput] = useState<GPT4VInput>(GPT4VInput.TextAndImages);
     const [useGPT4V, setUseGPT4V] = useState<boolean>(false);
-    const [useGPT4, setUseGPT4] = useState<boolean>(false);
+    const [useGPT4, setUseGPT4] = useState<boolean>(true);
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -243,7 +243,7 @@ const Chat = () => {
     };
 
     const onMinimumRerankerScoreChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setMinimumRerankerScore(parseFloat(newValue || "1.5"));
+        setMinimumRerankerScore(parseFloat(newValue || "1"));
     };
 
     const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
@@ -308,7 +308,7 @@ const Chat = () => {
             <div className={styles.commandsContainer}>
                 <ClearChatButton className={styles.commandButton} onClick={clearChat} disabled={!lastQuestionRef.current || isLoading} />
                 {showUserUpload && <UploadFile className={styles.commandButton} disabled={!isLoggedIn(client)} />}
-                <SettingsButton className={styles.commandButton} onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)} />
+                {/* <SettingsButton className={styles.commandButton} onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)} />  */}
             </div>
             <div className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
@@ -551,8 +551,8 @@ const Chat = () => {
                 </Panel>
                 </div>
             <div className={styles.disclaimer}>
-                <strong>Disclaimer:</strong> KjelGPT may produce incomplete or inaccurate information. Please consider the citations for verification.
-            </div>
+                <strong>Disclaimer:</strong> KjelGPT may produce incomplete or inaccurate information. Please consider the citations for verification. Report issues <a href="mailto:Wiedenbeck.E@buchi.com">here</a>.
+                </div>
         </div>
     );
 };

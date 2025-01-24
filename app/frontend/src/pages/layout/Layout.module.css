@@ -20,7 +20,6 @@
 .headerTitleContainer {
     display: flex;
     align-items: center;
-    margin-right: 40px;
     color: #f2f2f2;
     text-decoration: none;
 }
@@ -30,7 +29,7 @@
 }
 
 .headerTitle {
-    margin-left: 12px;
+    margin-left: 12px; /* Space between logo and title */
     font-weight: 600;
 }
 

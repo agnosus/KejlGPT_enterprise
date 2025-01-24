@@ -1,4 +1,6 @@
 from typing import Any, Coroutine, List, Literal, Optional, Union, overload
+import aiohttp
+import asyncio
 
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
@@ -14,7 +16,6 @@ from openai_messages_token_helper import build_messages, get_token_limit
 from approaches.approach import ThoughtStep
 from approaches.chatapproach import ChatApproach
 from core.authentication import AuthenticationHelper
-import asyncio
 
 class ChatReadRetrieveReadApproach(ChatApproach):
     """
@@ -55,28 +56,51 @@ class ChatReadRetrieveReadApproach(ChatApproach):
 
     @property
     def system_message_chat_conversation(self):
-        return """You are a helpful assistant that answers technical questions about Kjeldahl and distillation. Be brief in your answers.
-
-Concepts to remember:
-- Application: A method used on an instrument to determine the amount of a given analyte or to describe how to use the instrument on a given sample type with specific parameters. Methods, procedures, and results of such applications are explained in application notes.
-- Configuration/Instrument Configuration: An instrument with a particular article number that includes a set of features, components, or accessories. A bundle refers to an instrument sold with another instrument, usually with a specific article number.
-- Digesters (Digestion Units): Instruments such as KjelDigester K-446 and KjelDigester K-449, which are block digesters. SpeedDigesters include SpeedDigester K-425, SpeedDigesters K-436, and SpeedDigesters K-439.
-- Scrubber K-415: An instrument for fume removal during digestion, available in multiple configurations (DuoScrub, TripleScrub, TripleScrubECO, QuadScrubECO).
-- Distillation Units: Instruments divided into low-mid-range distillation (product line K-365) and high-end Kjeldahl distillation:
-  - Kjel Line: For nitrogen-containing analytes, consisting of EasyKjel, BasicKjel, and MultiKjel.
-  - Dist Line: Consisting of EasyDist, BasicDist, and MultiDist, each with different analyte capabilities.
-  - High-End Kjeldahl: Includes the KjelMaster K-375 (a distillation unit with integrated titration for nitrogen-containing analytes) which can be coupled with KjelSampler K-376 / K-377 (an autosampler instrument that can transfer samples to the KjelMaster K-375).
-
-Answer ONLY with the facts listed in the list of sources below. If there isn't enough information, say you don't know and that you are being trained and will be updated soon. Do not generate answers that don't use the sources below. If asking a clarifying question to the user would help, ask the question.
-
-For tabular information, return it as an HTML table. Do not return markdown format. If the question is not in English, answer in the language used in the question.
-
-Each source has a name followed by the actual information. Always include the source name for each fact you use in the response. Use square brackets to reference the source, for example [info1.txt]. Don't combine sources, list each source separately, for example [info1.txt][info2.pdf].
-
+        return """You are a helpful assistant that answers technical questions about Kjeldahl and Distillation. Be brief in your answers.
+    Concepts to remember:
+    - Application: A method used on an instrument to determine the amount of a given analyte or to describe how to use the instrument on a given sample type with specific parameters. Methods, procedures, and results of such applications are explained in application notes.
+    - Configuration/Instrument Configuration: An instrument with a particular article number that includes a set of features, components, or accessories. A bundle refers to an instrument sold with another instrument, usually with a specific article number.
+    - Digesters (Digestion Units): Instruments such as KjelDigester K-446 and KjelDigester K-449, which are block digesters. SpeedDigesters include SpeedDigester K-425, SpeedDigesters K-436, and SpeedDigesters K-439.
+    - Scrubber K-415: An instrument for fume removal during digestion, available in multiple configurations (DuoScrub, TripleScrub, TripleScrubECO, QuadScrubECO).
+    - Distillation Units: Instruments divided into low-mid-range distillation (product line K-365) and high-end Kjeldahl distillation:
+      - Kjel Line: For nitrogen-containing analytes, consisting of EasyKjel, BasicKjel, and MultiKjel.
+      - Dist Line: Consisting of EasyDist, BasicDist, and MultiDist, each with different analyte capabilities.
+      - High-End Kjeldahl: Includes the KjelMaster K-375 (a distillation unit with integrated titration for nitrogen-containing analytes) which can be coupled with KjelSampler K-376 / K-377 (an autosampler instrument that can transfer samples to the KjelMaster K-375).
+Answer ONLY with the facts listed in the list of sources below. If there isn't enough information, just say "I was not able to find any information in the provided resources. If your question is considered relevant and there should be an answer available, I will receive training and updates in the coming weeks." Do not generate answers that don't use the sources below. If asking a clarifying question to the user would help, ask the question.
+   For tabular information, return it as an HTML table. Do not return markdown format. Always use plain text for equations. If the question is not in English, answer in the language used in the question.
+   Each source has a name followed by the actual information. Always include the source name for each fact you use in the response. Use square brackets to reference the source, for example [example1.txt]. Don't combine sources, list each source separately, for example [example1.txt][example2.pdf].
 {follow_up_questions_prompt}
 {injected_prompt}
 
         """
+
+    async def get_api_response(self, query: str) -> dict:
+        """
+        Make an API call to Perplexity AI when search results are empty.
+        """
+        url = "https://api.perplexity.ai/chat/completions"
+        payload = {
+            "return_citations": False,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"Answer the following question in the context of Kjeldahl and Distillation: {query}"
+                }
+            ],
+            "model": "llama-3.1-sonar-large-128k-online",
+            "temperature": 0.2
+        }
+        headers = {
+            "Authorization": "Bearer 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",
+            "Content-Type": "application/json"
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    return {"error": f"API call failed with status {response.status}"}
 
     @overload
     async def run_until_final_call(
@@ -105,10 +129,16 @@ Each source has a name followed by the actual information. Always include the so
     ) -> tuple[dict[str, Any], Coroutine[Any, Any, Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]]]:
         has_text = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         has_vector = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
-        use_semantic_captions = True if overrides.get("semantic_captions") and has_text else False
-        top = overrides.get("top", 3)
-        minimum_search_score = overrides.get("minimum_search_score", 0.0)
-        minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
+
+        use_semantic_captions = True if overrides.get("retrieval_mode") == "text" else False
+        if use_semantic_captions:
+            top = 3
+            minimum_search_score = 0
+            minimum_reranker_score = 0
+        else:
+            top = overrides.get("top", 3)
+            minimum_search_score = overrides.get("minimum_search_score", 0.0)
+            minimum_reranker_score = overrides.get("minimum_reranker_score", 0.0)
 
         filter = self.build_filter(overrides, auth_claims)
         use_semantic_ranker = True if overrides.get("semantic_ranker") and has_text else False
@@ -138,7 +168,6 @@ Each source has a name followed by the actual information. Always include the so
             }
         ]
 
-        # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
         query_response_token_limit = 100
         query_messages = build_messages(
             model=self.chatgpt_model,
@@ -152,24 +181,19 @@ Each source has a name followed by the actual information. Always include the so
 
         chat_completion: ChatCompletion = await self.openai_client.chat.completions.create(
             messages=query_messages,  # type: ignore
-            # Azure OpenAI takes the deployment name as the model name
             model="gpt4" if overrides.get('use_gpt4') else "chat",
-            temperature=0.0,  # Minimize creativity for search query generation
-            max_tokens=query_response_token_limit,  # Setting too low risks malformed JSON, setting too high may affect performance
+            temperature=0.0,
+            max_tokens=query_response_token_limit,
             n=1,
             tools=tools,
         )
 
         query_text = self.get_search_query(chat_completion, original_user_query)
 
-        # STEP 2: Retrieve relevant documents from the search index with the GPT optimized query
-
-        # If retrieval mode includes vectors, compute an embedding for the query
         vectors: list[VectorQuery] = []
         if has_vector:
             vectors.append(await self.compute_text_embedding(query_text))
 
-        # Only keep the text query if the retrieval mode uses text, otherwise drop it
         if not has_text:
             query_text = None
 
@@ -226,25 +250,19 @@ Each source has a name followed by the actual information. Always include the so
         results = final_result
 
         # end of intervention
-
-
         sources_content = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
         content = "\n".join(sources_content)
 
-        # STEP 3: Generate a contextual and content specific answer using the search results and chat history
-
-        # Allow client to replace the entire prompt, or to inject into the exiting prompt using >>>
         system_message = self.get_system_prompt(
             overrides.get("prompt_template"),
             self.follow_up_questions_prompt_content if overrides.get("suggest_followup_questions") else "",
         )
 
         response_token_limit = 1024
-        messages = build_messages(
+        messages_for_completion = build_messages(
             model=self.chatgpt_model,
             system_prompt=system_message,
             past_messages=messages[:-1],
-            # Model does not handle lengthy system messages well. Moving sources to latest user conversation to solve follow up questions prompt.
             new_user_content=original_user_query + "\n\nSources:\n" + content,
             max_tokens=self.chatgpt_token_limit - response_token_limit,
         )
@@ -257,11 +275,7 @@ Each source has a name followed by the actual information. Always include the so
                 ThoughtStep(
                     "Prompt to generate search query",
                     [str(message) for message in query_messages],
-                    (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                        if self.chatgpt_deployment
-                        else {"model": self.chatgpt_model}
-                    ),
+                    {"model": "gpt4o"}
                 ),
                 ThoughtStep(
                     "Search using generated search query",
@@ -280,23 +294,103 @@ Each source has a name followed by the actual information. Always include the so
                 ),
                 ThoughtStep(
                     "Prompt to generate answer",
-                    [str(message) for message in messages],
-                    (
-                        {"model": self.chatgpt_model, "deployment": self.chatgpt_deployment}
-                        if self.chatgpt_deployment
-                        else {"model": self.chatgpt_model}
-                    ),
+                    [str(message) for message in messages_for_completion],
+                    {"model": "gpt4o"},
                 ),
             ],
         }
 
-        chat_coroutine = self.openai_client.chat.completions.create(
-            # Azure OpenAI takes the deployment name as the model name
+        # Generate the initial response
+        chat_completion = await self.openai_client.chat.completions.create(
             model="gpt4" if overrides.get('use_gpt4') else "chat",
-            messages=messages,
+            messages=messages_for_completion,
             temperature=overrides.get("temperature", 0.3),
             max_tokens=response_token_limit,
             n=1,
-            stream=should_stream,
+            stream=False,
         )
+
+        initial_response = chat_completion.choices[0].message.content
+
+        # Check if the response indicates no information was found
+        if 'any information' in initial_response.lower():
+            # If no information was found, use Perplexity AI API
+            api_response = await self.get_api_response(query_text)
+            
+            if "error" not in api_response:
+                prefix = "Sorry! No information was found in our documents. Meanwhile here is an answer from perplexity.ai that you may find useful:\n\n"
+                api_content = api_response['choices'][0]['message']['content']
+                prefixed_api_content = prefix + api_content
+
+                # Update messages with the API response
+                new_messages = messages[:-1]  # All messages except the last user message
+                new_messages.append({"role": "user", "content": original_user_query})
+                new_messages.append({"role": "assistant", "content": prefixed_api_content})
+
+                # Update extra_info to reflect the API call
+                extra_info["thoughts"].extend([
+                    ThoughtStep(
+                        "No information in documents",
+                        "Initial response indicated no information was found. Using Perplexity AI API response.",
+                        {}
+                    ),
+                    ThoughtStep(
+                        "API Response",
+                        prefixed_api_content,
+                        {"api_call": "Perplexity AI", "model": api_response['model']}
+                    )
+                ])
+
+                # Create new chat completion with API response
+                chat_coroutine = self.openai_client.chat.completions.create(
+                model="gpt4" if overrides.get('use_gpt4') else "chat",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f""" repeat the ANSWER verbatim (begin with 'Sorry! No information was found in our documents. Meanwhile here is an answer from perplexity.ai that you may find useful:\n\n').  ANSWER: {prefixed_api_content}"""
+                    }
+                ],
+                temperature=overrides.get("temperature", 0.3),
+                max_tokens=1024,
+                n=1,
+                stream=should_stream,
+            )
+            else:
+                # Handle API error
+                error_message = "Sorry, I couldn't find an answer to your question and encountered an issue with the backup system."
+                new_messages = messages[:-1]  # All messages except the last user message
+                new_messages.append({"role": "user", "content": original_user_query})
+                new_messages.append({"role": "assistant", "content": error_message})
+                
+                extra_info["thoughts"].append(
+                    ThoughtStep(
+                        "API Error",
+                        api_response["error"],
+                        {"api_call": "Perplexity AI"}
+                    )
+                )
+
+                chat_coroutine = self.openai_client.chat.completions.create(
+                    model="gpt4" if overrides.get('use_gpt4') else "chat",
+                    messages=new_messages,
+                    temperature=overrides.get("temperature", 0.3),
+                    max_tokens=1024,
+                    n=1,
+                    stream=should_stream,
+                )
+        else:
+            # If information was found, use the original response
+            chat_coroutine = self.openai_client.chat.completions.create(
+                model="gpt4" if overrides.get('use_gpt4') else "chat",
+                messages=messages_for_completion,
+                temperature=overrides.get("temperature", 0.3),
+                max_tokens=response_token_limit,
+                n=1,
+                stream=should_stream,
+            )
+
         return (extra_info, chat_coroutine)
+
+    # Other methods (build_filter, search, compute_text_embedding, get_search_query, get_sources_content)
+    # should be implemented here, but they're not provided in the original snippet.
+    # Make sure to include these methods in your actual implementation.

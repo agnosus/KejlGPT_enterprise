@@ -5,8 +5,6 @@ import styles from "./Example.module.css";
 const DEFAULT_EXAMPLES: string[] = [
 "What is the difference between K-446 and K-449?",
 "Can you tell me if we have application notes about protein determination in plant meat?",
-"How does TKN+ work?",
-"What is the material of the housing of K-365?",
 "What are the analytes that I can determine with a SpeedDigester K-439?",
 "What are the analytes that I can determine with an EasyKjel?",
 "Which instruments from Dist Line do have an alkali pump for NaOH dosing?",

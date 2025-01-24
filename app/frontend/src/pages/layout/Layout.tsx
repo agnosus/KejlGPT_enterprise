@@ -1,13 +1,7 @@
-import { Outlet, NavLink, Link } from "react-router-dom";
-
-import github from "../../assets/github.svg";
-
+import { Outlet } from "react-router-dom";
 import styles from "./Layout.module.css";
-
 import { useLogin } from "../../authConfig";
-
 import { LoginButton } from "../../components/LoginButton";
-
 import logo from '/workspaces/buchigpt_enterprise/app/frontend/src/assets/BUCHI Logo_Green.png';
 
 const Layout = () => {
@@ -15,41 +9,14 @@ const Layout = () => {
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>
                 <div className={styles.headerContainer}>
-                 <img src={logo} alt="BuchiLogo" className={styles.BuchiLogo}/>
-                    <Link to="/" className={styles.headerTitleContainer}>
-                        <h3 className={styles.headerTitle}>BuchiGPT Enterprise</h3>
-                    </Link>
-                    <nav>
-                        <ul className={styles.headerNavList}>
-                            <li>
-                                <NavLink to="/" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
-                                    Secure chat with your Buchi documents!
-                                </NavLink>
-                            {/* </li>
-                            <li className={styles.headerNavLeftMargin}>
-                                <NavLink to="/qa" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
-                                    Ask a question
-                                </NavLink>
-                            </li>
-                            <li className={styles.headerNavLeftMargin}>
-                                <a href="https://aka.ms/entgptsearch" target={"_blank"} title="Github repository link">
-                                    <img
-                                        src={github}
-                                        alt="Github logo"
-                                        aria-label="Link to github repository"
-                                        width="20px"
-                                        height="20px"
-                                        className={styles.githubLogo}
-                                    />
-                                </a>*/}
-                            </li> 
-                        </ul>
-                    </nav>
-                    <h4 className={styles.headerRightText}>Azure OpenAI + AI Search</h4>
+                    <div className={styles.headerTitleContainer}>
+                        <img src={logo} alt="Logo" className={styles.headerLogo} />
+                        <span className={styles.headerTitle}>BUCHI GPT Enterprise</span>
+                    </div>
+                    <h4 className={styles.headerRightText}>KjelGPT V1.2.0</h4>
                     {useLogin && <LoginButton />}
                 </div>
             </header>
-
             <Outlet />
         </div>
     );

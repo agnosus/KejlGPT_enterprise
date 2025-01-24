@@ -151,7 +151,7 @@ class Approach(ABC):
                 query_speller=self.query_speller,
                 semantic_configuration_name="default",
                 top=top,
-                query_caption="extractive|highlight-false" if use_semantic_captions else None,
+                query_caption= None,
                 vector_queries=vectors,
             )
         else:

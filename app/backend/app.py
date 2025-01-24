@@ -30,12 +30,12 @@ from azure.storage.blob.aio import StorageStreamDownloader as BlobDownloader
 from azure.storage.filedatalake.aio import FileSystemClient
 from azure.storage.filedatalake.aio import StorageStreamDownloader as DatalakeDownloader
 from openai import AsyncAzureOpenAI, AsyncOpenAI
-from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
-from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
-from opentelemetry.instrumentation.httpx import (
-    HTTPXClientInstrumentor,
-)
-from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+# from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+# from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+# from opentelemetry.instrumentation.httpx import (
+#     HTTPXClientInstrumentor,
+# )
+# from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from quart import (
     Blueprint,
     Quart,
@@ -91,9 +91,10 @@ from prepdocslib.listfilestrategy import File
 
 # Configuration
 COSMOS_DB_URL = "https://kjelgpt.documents.azure.com:443/"
-COSMOS_DB_KEY = "yWWmuDgSLeZqGbcqqD2nynvr3V98iUmCdnKvBvWb3gcgxqdjByKftkhhRnEhKXSm1JAMDtyHpUmvACDbQYetFQ=="
+COSMOS_DB_KEY = "yWWmuDgSLeZqGbcqqD2nynvr3V98iUmCdnKvBvWb3gcgxqdjByKftkhhRnEhKXSm1JAMDtyHpUmvACDbQYetFQ==" #os.getenv('COSMOS_DB_KEY')
 DATABASE_NAME = 'test'
 CONTAINER_NAME = 'test'
+
 
 cosmos_client = CosmosClient(COSMOS_DB_URL, COSMOS_DB_KEY)
 database = cosmos_client.get_database_client(DATABASE_NAME)
@@ -105,7 +106,8 @@ async def log_to_cosmos_db(log_data):
         log_item = {
             'id': str(uuid.uuid4()),  # Unique identifier for the log item
             'timestamp': str(datetime.now()),  # Partition key
-            'messages': log_data
+            'messages': log_data,
+            'gpt': "kjel"
         }
         await container.create_item(body=log_item)
         print("Log successfully written to Cosmos DB.")
@@ -687,16 +689,16 @@ def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
 
-    if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
-        configure_azure_monitor()
-        # This tracks HTTP requests made by aiohttp:
-        AioHttpClientInstrumentor().instrument()
-        # This tracks HTTP requests made by httpx:
-        HTTPXClientInstrumentor().instrument()
-        # This tracks OpenAI SDK requests:
-        OpenAIInstrumentor().instrument()
-        # This middleware tracks app route requests:
-        app.asgi_app = OpenTelemetryMiddleware(app.asgi_app)  # type: ignore[assignment]
+    # if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+    #     configure_azure_monitor()
+    #     # This tracks HTTP requests made by aiohttp:
+    #     AioHttpClientInstrumentor().instrument()
+    #     # This tracks HTTP requests made by httpx:
+    #     HTTPXClientInstrumentor().instrument()
+    #     # This tracks OpenAI SDK requests:
+    #     OpenAIInstrumentor().instrument()
+    #     # This middleware tracks app route requests:
+    #     app.asgi_app = OpenTelemetryMiddleware(app.asgi_app)  # type: ignore[assignment]
 
     # Level should be one of https://docs.python.org/3/library/logging.html#logging-levels
     default_level = "INFO"  # In development, log more verbosely
