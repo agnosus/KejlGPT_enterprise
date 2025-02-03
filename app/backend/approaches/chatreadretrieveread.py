@@ -1,7 +1,7 @@
 from typing import Any, Coroutine, List, Literal, Optional, Union, overload
 import aiohttp
 import asyncio
-
+import re
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorQuery
 from openai import AsyncOpenAI, AsyncStream
@@ -56,15 +56,8 @@ class ChatReadRetrieveReadApproach(ChatApproach):
 
     @property
     def system_message_chat_conversation(self):
-        return """You are a helpful assistant that answers technical questions about Kjeldahl and Distillation. Be brief in your answers.
-    Concepts to remember:
-    - Application: A method used on an instrument to determine the amount of a given analyte or to describe how to use the instrument on a given sample type with specific parameters. Methods, procedures, and results of such applications are explained in application notes.
-    - Configuration/Instrument Configuration: An instrument with a particular article number that includes a set of features, components, or accessories. A bundle refers to an instrument sold with another instrument, usually with a specific article number.
-    - Digesters (Digestion Units): Instruments such as KjelDigester K-446 and KjelDigester K-449, which are block digesters. SpeedDigesters include SpeedDigester K-425, SpeedDigesters K-436, and SpeedDigesters K-439.
-    - Scrubber K-415: An instrument for fume removal during digestion, available in multiple configurations (DuoScrub, TripleScrub, TripleScrubECO, QuadScrubECO).
-    - Distillation Units: Instruments divided into low-mid-range distillation (product line K-365) and high-end Kjeldahl distillation:
-      - Kjel Line: For nitrogen-containing analytes, consisting of EasyKjel, BasicKjel, and MultiKjel.
-      - Dist Line: Consisting of EasyDist, BasicDist, and MultiDist, each with different analyte capabilities.
+        return """You are a helpful assistant that answers technical questions about Buchi Extraction solutions. Be brief in your answers.
+    Concepts to remember:\\n - Application: A method used on an instrument to determine the amount of a given analyte or to describe how to use the instrument on a given sample type with specific parameters. Methods, procedures, and results of such applications are explained in application notes.\\n - Configuration/Instrument Configuration: An instrument with a particular article number that includes a set of features, components, or accessories. A bundle refers to an instrument sold with another instrument, usually with a specific article number.\\n – Hydrolysis Unit: Instrument such as HydrolEx H-506. An instrument for sample preparation for fat determination.\\n – Extraction Units: instruments divided into classical extraction and pressurized solvent extraction.\\n – Classical extraction consists of FatExtractor E-500 and UniversalExtractor E-800.\\n – FatExtractor E-500 is used for fat determination of food and feed samples.\\n - FatExtractor E-500 is divided into configuration Soxhlet (SOX), hot extraction (HE) and economic continuous extraction (ECE).\\n – UniversalExtractor E-800 is used for extraction of environmental, food and feed, chemical, polymer and textile samples.\\n – UniversalExtractor E-800 is divided into UniversalExtractor E-800 standard and UniversalExtractor E-800 HE.\\n – Pressurized solvent extraction: SpeedExtractor is divided into configuration E-916, E-916 XL and E-914.
       - High-End Kjeldahl: Includes the KjelMaster K-375 (a distillation unit with integrated titration for nitrogen-containing analytes) which can be coupled with KjelSampler K-376 / K-377 (an autosampler instrument that can transfer samples to the KjelMaster K-375).
 Answer ONLY with the facts listed in the list of sources below. If there isn't enough information, just say "I was not able to find any information in the provided resources. If your question is considered relevant and there should be an answer available, I will receive training and updates in the coming weeks." Do not generate answers that don't use the sources below. If asking a clarifying question to the user would help, ask the question.
    For tabular information, return it as an HTML table. Do not return markdown format. Always use plain text for equations. If the question is not in English, answer in the language used in the question.
@@ -83,11 +76,15 @@ Answer ONLY with the facts listed in the list of sources below. If there isn't e
             "return_citations": False,
             "messages": [
                 {
+            "role": "system",
+            "content": "Be precise and concise."
+        },
+                {
                     "role": "user",
-                    "content": f"Answer the following question in the context of Kjeldahl and Distillation: {query}"
+                    "content": f"Answer the following question in the context of Extraction: {query}"
                 }
             ],
-            "model": "llama-3.1-sonar-large-128k-online",
+            "model": "sonar",
             "temperature": 0.2
         }
         headers = {
@@ -320,7 +317,18 @@ Answer ONLY with the facts listed in the list of sources below. If there isn't e
             if "error" not in api_response:
                 prefix = "Sorry! No information was found in our documents. Meanwhile here is an answer from perplexity.ai that you may find useful:\n\n"
                 api_content = api_response['choices'][0]['message']['content']
-                prefixed_api_content = prefix + api_content
+                
+                # Transform numbered citations in the main text
+                if 'citations' in api_response:
+                    transformed_content = api_content
+                    for idx, citation in enumerate(api_response['citations'], 1):
+                        transformed_content = transformed_content.replace(
+                            f'[{idx}]', 
+                            f'[{citation}]'
+                        )
+                    prefixed_api_content = prefix + transformed_content
+                else:
+                    prefixed_api_content = prefix + api_content
 
                 # Update messages with the API response
                 new_messages = messages[:-1]  # All messages except the last user message

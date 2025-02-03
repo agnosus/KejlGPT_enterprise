@@ -283,13 +283,24 @@ const Chat = () => {
     };
 
     const onShowCitation = (citation: string, index: number) => {
+        // Check if citation starts with 'Citation ' and contains a URL
+        // This handles the format: "Citation {number}. {url}"
+        if (citation.includes('https://') || citation.includes('http://')) {
+            // Extract the URL from the citation text
+            const urlMatch = citation.match(/(https?:\/\/[^\s]+)/);
+            if (urlMatch) {
+                window.open(urlMatch[0], '_blank', 'noopener,noreferrer');
+                return;
+            }
+        }
+        
+        // Original behavior for document citations
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
             setActiveCitation(citation);
             setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
         }
-
         setSelectedAnswer(index);
     };
 
@@ -315,7 +326,7 @@ const Chat = () => {
                     {!lastQuestionRef.current ? (
                         <div className={styles.chatEmptyState}>
                             <SparkleFilled fontSize={"120px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Chat logo" />
-                            <h1 className={styles.chatEmptyStateTitle}>KjelGPT</h1>
+                            <h1 className={styles.chatEmptyStateTitle}>ExtractGPT</h1>
                             <h2 className={styles.chatEmptyStateSubtitle}>Ask anything or try an example</h2>
                             <ExampleList onExampleClicked={onExampleClicked} useGPT4V={useGPT4V} />
                         </div>
@@ -386,7 +397,7 @@ const Chat = () => {
                     <div className={styles.chatInput}>
                         <QuestionInput
                             clearOnSend
-                            placeholder="Type a new question (e.g. what is autodist?)"
+                            placeholder="Type a new question (e.g. what is E-916?)"
                             disabled={isLoading}
                             onSend={question => makeApiRequest(question)}
                             showSpeechInput={showSpeechInput}
@@ -434,7 +445,7 @@ const Chat = () => {
                         showValue
                         snapToStep
                     /> */}
-{/* 
+                    {/* 
                     <SpinButton
                         className={styles.chatSettingsSeparator}
                         label="Minimum search score"
@@ -443,7 +454,7 @@ const Chat = () => {
                         defaultValue={minimumSearchScore.toString()}
                         onChange={onMinimumSearchScoreChange}
                     /> */}
-{/* 
+                    {/* 
                     <SpinButton
                         className={styles.chatSettingsSeparator}
                         label="Minimum reranker score"
@@ -484,11 +495,9 @@ const Chat = () => {
                         checked={useSuggestFollowupQuestions}
                         label="Suggest follow-up questions"
                         onChange={onUseSuggestFollowupQuestionsChange}
-                    /> 
+                    />
 
-                    <div className={styles.chatSettingsSeparator}>
-                    
-                    </div>
+                    <div className={styles.chatSettingsSeparator}></div>
 
                     {showGPT4VOptions && (
                         <GPT4VSettings
@@ -501,12 +510,7 @@ const Chat = () => {
                         />
                     )}
 
-                    <Checkbox
-                        className={styles.askSettingsSeparator}                 checked={useGPT4}
-                        label="GPT4o (use for tricky questions!)"
-                        onChange={onUseGPT4Change}
-                
-                    />
+                    <Checkbox className={styles.askSettingsSeparator} checked={useGPT4} label="GPT4o (use for tricky questions!)" onChange={onUseGPT4Change} />
 
                     {showVectorOption && (
                         <VectorSettings
@@ -535,7 +539,7 @@ const Chat = () => {
                             onChange={onUseGroupsSecurityFilterChange}
                         />
                     )}
-{/* 
+                    {/* 
                     <Checkbox
                         className={styles.chatSettingsSeparator}
                         checked={shouldStream}
@@ -543,16 +547,15 @@ const Chat = () => {
                         onChange={onShouldStreamChange}
                     /> */}
 
-                    <div className={styles.chatSettingsSeparator}>
-                    Use 'Full text' option for numerical or keyword search (e.g. article numbers)
-                    </div>
+                    <div className={styles.chatSettingsSeparator}>Use 'Full text' option for numerical or keyword search (e.g. article numbers)</div>
 
                     {useLogin && <TokenClaimsDisplay />}
                 </Panel>
-                </div>
+            </div>
             <div className={styles.disclaimer}>
-                <strong>Disclaimer:</strong> KjelGPT may produce incomplete or inaccurate information. Please consider the citations for verification. Report issues <a href="mailto:Wiedenbeck.E@buchi.com">here</a>.
-                </div>
+                <strong>Disclaimer:</strong> ExtractGPT may produce incomplete or inaccurate information. Please consider the citations for verification. Report
+                issues <a href="mailto:sander.m@buchi.com">here</a>.
+            </div>
         </div>
     );
 };

@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import styles from "./Layout.module.css";
 import { useLogin } from "../../authConfig";
 import { LoginButton } from "../../components/LoginButton";
-import logo from '/workspaces/buchigpt_enterprise/app/frontend/src/assets/BUCHI Logo_Green.png';
+import logo from "/workspaces/buchigpt_enterprise/app/frontend/src/assets/BUCHI Logo_Green.png";
 
 const Layout = () => {
     return (
@@ -13,7 +13,7 @@ const Layout = () => {
                         <img src={logo} alt="Logo" className={styles.headerLogo} />
                         <span className={styles.headerTitle}>BUCHI GPT Enterprise</span>
                     </div>
-                    <h4 className={styles.headerRightText}>KjelGPT V1.2.0</h4>
+                    <h4 className={styles.headerRightText}>ExtractGPT v1.0.0</h4>
                     {useLogin && <LoginButton />}
                 </div>
             </header>

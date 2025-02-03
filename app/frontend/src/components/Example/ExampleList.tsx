@@ -3,12 +3,10 @@ import { Example } from "./Example";
 import styles from "./Example.module.css";
 
 const DEFAULT_EXAMPLES: string[] = [
-"What is the difference between K-446 and K-449?",
-"Can you tell me if we have application notes about protein determination in plant meat?",
-"What are the analytes that I can determine with a SpeedDigester K-439?",
-"What are the analytes that I can determine with an EasyKjel?",
-"Which instruments from Dist Line do have an alkali pump for NaOH dosing?",
-"On which instruments is MaxAccuracy mode available?",
+"When should I use FatExtractor vs UniversalExtractor?",
+"What are the key differences between E-916 XL and standard E-916?",
+"What's the maximum pressure rating for SpeedExtractor cells?",
+"Which BUCHI extraction system has the highest sample throughput?"
 ];
 
 const GPT4V_EXAMPLES: string[] = [
